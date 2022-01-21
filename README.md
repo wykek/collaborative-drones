@@ -1,5 +1,7 @@
 # colaborative-drones
 
+![image](/pics/collaborative-drones-banner.png)
+
 
 
 The aim of this project is to design a robust network of ground-based and air-based autonomous vehicles capable of efficiently and reliably accomplishing an array of pseudo-intelligent tasks, including path-finding, obstacle avoidance, and collaborative problem-solving.
