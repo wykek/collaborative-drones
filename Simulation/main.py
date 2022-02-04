@@ -41,4 +41,4 @@ simulationTest.addAggregateMap(testarray2)
 #simulationTest.addFlyingMap(testarray3, 0)
 simulationTest.printSimulation()
 
-for x in arraytest
+#for x in arraytest
