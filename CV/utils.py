@@ -5,14 +5,19 @@ Date: 01/20/2022
 """
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 from rich import print
 
 # Green color in BGR
 green = (0, 255, 0)
 blue = (255, 0, 0)
+red = (0, 0, 255)
+purple = (255, 0, 255)
 
 # Table for estimating object width (distance: pixels per cm)
+
+valid_ids = [str(n) for n in range(0,199)]
 
 pixelToCm = {"9": 65.00,
              "10": 56.00,
@@ -60,7 +65,52 @@ pixelToCm = {"9": 65.00,
 
              }
 
-def draw_grid(frame, obj_width = 50, resolution = (800,450), size = (16,9)):
+def gen_ROI_grid(frame, m_size, ref_loc, ref_qr, det, bounds, draw=True):
+    """
+
+    :param frame:
+    :param m_size:
+    :param ref_loc:
+    :return:
+    """
+    n_col, n_row = m_size
+    ref_row, ref_col = ref_loc
+    ref_x, ref_y, ref_w, ref_h = bounds
+
+    ROI_grid = np.empty((n_row, n_col), dtype=int)
+    # print(ROI_grid)
+
+    for row in range(0, n_row):
+
+        for col in range(0, n_col):
+            row_diff = ref_row - row
+            col_diff = ref_col - col
+            if row_diff != 0 or col_diff != 0:
+                new_ROI_left = ref_x + (-1 * (col_diff * ref_w))
+                new_ROI_right = new_ROI_left + ref_w
+                new_ROI_top = ref_y + (-1 * (row_diff * ref_w))
+                new_ROI_bottom = new_ROI_top + ref_w
+
+                new_ROI = frame[new_ROI_left:new_ROI_right, new_ROI_top:new_ROI_bottom]
+                qr_id = scan_qr(new_ROI, det)
+
+                if qr_id in valid_ids:
+                    ROI_grid[row][col] = int(qr_id)
+                    print(f"QR_ID: {qr_id}")
+                else:
+                    ROI_grid[row][col] = 0
+                if draw:
+                    frame = cv2.rectangle(frame, (new_ROI_left, new_ROI_top), (new_ROI_right, new_ROI_bottom), purple, 3)
+
+            else:
+                ROI_grid[row][col] = ref_qr # set to ref qrcode number
+
+    print(f"ROI_grid: \n {ROI_grid}")
+    return frame, ROI_grid
+
+
+
+def draw_grid(frame, reference, obj_width = 50, resolution = (800,450), size = (16,9)):
     """
     pass
     """
@@ -73,6 +123,32 @@ def draw_grid(frame, obj_width = 50, resolution = (800,450), size = (16,9)):
 
     y_points = [y for y in range(obj_width, resolution[1] - obj_width + 1,
                                  obj_width)]
+    print(reference)
+
+    dx = []
+    dy = []
+
+    # Offset vertical lines to center reference
+    for x in x_points:
+        dx.append(abs(x - reference[0])) if (x - reference[0] < 0) else dx.append(9999)
+    try:
+        closest_x = min(dx)
+    except(ValueError):
+        closest_x = 0
+    print(f"closest x: {closest_x}")
+
+    x_points = [x + closest_x for x in x_points]
+
+    # Offset horizontal lines to center reference
+    for y in y_points:
+        dy.append(abs(y - reference[1])) if (y - reference[1] < 0) else dx.append(9999)
+    try:
+        closest_y = min(dy)
+    except(ValueError):
+        closest_y = 0
+    print(f"closest y: {closest_y}")
+
+    y_points = [y + closest_y for y in y_points]
 
     # print(x_points)
     # print(y_points)
@@ -85,7 +161,7 @@ def draw_grid(frame, obj_width = 50, resolution = (800,450), size = (16,9)):
     for y in y_points:
         frame = cv2.line(frame, (0,y), (resolution[0],y), blue, 2)
 
-    return frame, x_points, y_points
+    return frame, x_points, y_points, closest_x, closest_y
 
 def fill_grid(viewport, frame, x_points, y_points, resolution = (800,450), size = (16,9)):
     """
@@ -120,7 +196,7 @@ def fill_grid(viewport, frame, x_points, y_points, resolution = (800,450), size 
             # print("x_count", x_count)
 
             if viewport.view[y_count][x_count] != 0:
-                frame = cv2.circle(frame, (x_coord, y_coord) , 7, green, thickness=3)
+                frame = cv2.circle(frame, (x_coord, y_coord), 7, green, thickness=3)
             else:
                 print(f"object at {y_count}, {x_count}")
 
@@ -133,7 +209,7 @@ def fill_grid(viewport, frame, x_points, y_points, resolution = (800,450), size 
 
 # Returns closed contours with a specified number of corners and a minimum area
 def get_contours(frame, cannyThr=[100, 100], showEdge=False,
-                 minArea=5000, filter=0, draw=False):
+                 min_area=5000, max_area=10000, filter=0, draw=False):
     frameGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     frameBlur = cv2.GaussianBlur(frameGray, (5, 5), 1)
     frameCanny = cv2.Canny(frameBlur, cannyThr[0], cannyThr[1])
@@ -150,7 +226,7 @@ def get_contours(frame, cannyThr=[100, 100], showEdge=False,
     if len(contours) > 0:
         for i in contours:
             area = cv2.contourArea(i)
-            if area > minArea:
+            if min_area < area < max_area:
                 peri = cv2.arcLength(i, True)  # perimeter
                 corners = cv2.approxPolyDP(i, 0.02 * peri, True)  # corner points
                 bounds = cv2.boundingRect(corners)  # bounding box
@@ -173,8 +249,35 @@ def get_contours(frame, cannyThr=[100, 100], showEdge=False,
     else:
         return frame, finalContours
 
+def get_ROI(frame, bounds, padding = 5):
+    """
+    pass
+    """
+
+    x, y, w, h = bounds
+    resW = frame.shape[1]
+    resH = frame.shape[0]
+    if x <= padding: x += padding
+    if y <= padding: y += padding
+    if resW <= x + padding: x -= padding
+    if resH <= y + padding: y -= padding
+
+    ROI = frame[(y-padding):(y+h+padding), (x-padding):(x+w+padding)]
+
+    try:
+        cv2.imshow('ROI', ROI)
+    except:
+        print("cv2 error!")
+
+    return ROI
+
 
 def obs_width(frame, bounds, dist, widthScale, draw=False, cm=False):
+    """
+    pass
+    """
+
+
     if len(bounds) > 0:
 
         xMin = bounds[0]
@@ -248,6 +351,15 @@ def pixel_width_hor(frame, contours, draw=False):
 
     else:
         return frame
+
+def scan_qr(frame, det):
+    try:
+        val, pts, st_code = det.detectAndDecode(frame)
+        # print(val)
+        return val
+    except:
+        print("cv2 error -  QR input image")
+        return None
 
 def shapeclassify(frame, minShapeArea=2500, showEdge=False):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
