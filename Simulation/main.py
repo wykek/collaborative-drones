@@ -34,11 +34,19 @@ dronetest.addMap(testarray2)
 print(dronetest.getCameraMap())
 print(dronetest.getXPos())
 
+# Simulation initialization and map copy test
 simulationTest = sim.Simulation(testarray2)
 simulationTest.addBlankMap(2,2)
 simulationTest.addAggregateMap(testarray2)
-#simulationTest.addFlyingCamera()
-#simulationTest.addFlyingMap(testarray3, 0)
+
+# Drone appending test
+simulationTest.addFlyingCamera()
+simulationTest.addFlyingMap(testarray3, 0)
+simulationTest.addFlyingPosition(0,0,0,1)
+simulationTest.printSimulation()
+
+# Update map test
+simulationTest.updateMap()
 simulationTest.printSimulation()
 
 #for x in arraytest
