@@ -1,4 +1,4 @@
-# colaborative-drones
+# collaborative-drones
 
 ### Contributors:
 * Sharome Burton
