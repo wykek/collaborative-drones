@@ -271,12 +271,12 @@ class SimulationUI:
         resizeList.append(randomButton.setScale)
         # Import File Map Button
         fileButton = Button("File")
-        fileButton.setPosition(0.75, 0.6, 0.07, 0.04)
+        fileButton.setPosition(0.83, 0.6, 0.028, 0.04)
         fileButton.setScale(defaultX, defaultY)
         resizeList.append(fileButton.setScale)
         # Import Camera Map Button
         cameraButton = Button("Camera")
-        cameraButton.setPosition(0.75, 0.6, 0.07, 0.04)
+        cameraButton.setPosition(0.867, 0.6, 0.063, 0.04)
         cameraButton.setScale(defaultX, defaultY)
         resizeList.append(cameraButton.setScale)
 
