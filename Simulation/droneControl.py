@@ -1,14 +1,17 @@
 import birdsEyeMap as bem
 import cameraDrones as cd
 import numpy as np
-
+import socket
 
 #
-class Simulation:
+class Controller:
     def __init__(self, inMap=np.array([], np.int16)):
         self.__detailedMap = bem.DroneMap(inMap)
         self.__flyingCameras = []
         self.__cars = []
+
+        self.__commandLength = 5
+        self.__carSockets = []
 
     def addAggregateMap(self, inMap):
         self.__detailedMap.copyMap(inMap)
@@ -25,6 +28,23 @@ class Simulation:
     # Not working
     def addCarCamera(self):
         self.__cars.append(cd.DroneCar())
+        thisCar = len(self.__cars) - 1
+        portNumber = 1093
+        try:
+            configName = "config" + str(thisCar + 1) + ".txt"
+            conFile = open(configName, 'r')
+            # First line of config file is port
+            portNumber = conFile.read()
+            portNumber = int(conFile.read())
+            conFile.close()
+        except:
+            portNumber = 1093  # No config file found, use default ports
+
+        # Set up a socket to actually control the car
+        self.__carSockets.append(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self.__carSockets[thisCar].bind((socket.gethostname(), portNumber))
+        self.__carSockets[thisCar].listen(5)
+
         # TODO add car check
 
     def addBlankMap(self, xSize, ySize):
@@ -54,11 +74,33 @@ class Simulation:
     def moveCarForward(self, carNumber):
         self.__cars[carNumber - 1].moveForward()
 
+        # Send the signal to the car to go
+        while True:
+            # Mutual connection established
+            targetSocket, address = self.__carSockets[carNumber - 1].accept()
+
+            # 1 will mean go forward
+            outCommand = "1"
+            outCommand = f"{len(outCommand):<{self.__commandLength}}" + outCommand
+
+            targetSocket.send(bytes(outCommand, "utf-8"))
+
     def moveFlyingBack(self, flyingNumber):
         self.__flyingCameras[flyingNumber].moveBack()
 
     def moveCarBack(self, carNumber):
         self.__cars[carNumber - 1].moveBack()
+
+        # Send the signal to the car to go
+        while True:
+            # Mutual connection established
+            targetSocket, address = self.__carSockets[carNumber - 1].accept()
+
+            # 2 will mean go back
+            outCommand = "2"
+            outCommand = f"{len(outCommand):<{self.__commandLength}}" + outCommand
+
+            targetSocket.send(bytes(outCommand, "utf-8"))
 
     # Rotation
     def rotateFlying(self, flyingNumber):
@@ -67,11 +109,33 @@ class Simulation:
     def rotateCar(self, carNumber):
         self.__cars[carNumber - 1].rotateClockwise()
 
+        # Send the signal to the car to go
+        while True:
+            # Mutual connection established
+            targetSocket, address = self.__carSockets[carNumber - 1].accept()
+
+            # 3 will mean turn clockwise
+            outCommand = "3"
+            outCommand = f"{len(outCommand):<{self.__commandLength}}" + outCommand
+
+            targetSocket.send(bytes(outCommand, "utf-8"))
+
     def rotateFlyingTo(self, flyingNumber, desiredOrientation):
         self.__flyingCameras[flyingNumber].rotateToOrientation()
 
     def rotateCarTo(self, carNumber, desiredOrientation):
         self.__cars[carNumber - 1].rotateToOrientation()
+
+        # Send the signal to the car to go
+        while True:
+            # Mutual connection established
+            targetSocket, address = self.__carSockets[carNumber - 1].accept()
+
+            # 1 will mean go counter clockwise
+            outCommand = "4"
+            outCommand = f"{len(outCommand):<{self.__commandLength}}" + outCommand
+
+            targetSocket.send(bytes(outCommand, "utf-8"))
 
     # Todo: Get X and Y values by adjusting for differences in camera.
     # Iterate through car and flying cameras to incorporate all changes

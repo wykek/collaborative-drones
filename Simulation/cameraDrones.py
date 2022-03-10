@@ -1,12 +1,13 @@
 import birdsEyeMap as bem
 import numpy as np
 
-
 class DroneCamera:
     def __init__(self, inX=None, inY=None, inRotation=0):
         # Stores where the map starts in relation to the drone's position
         self.__offsetX = 0
         self.__offsetY = 0
+
+        self.__movement = None
 
         self.__thisDroneMap = bem.DroneMap()
         # Position is set at initialization
@@ -130,7 +131,9 @@ class DroneCamera:
             print("Error: attempted rotation without position. \n")
 
     def rotateToOrientation(self, desiredOrientation):
-        self.__droneRotation = desiredOrientation
+        while self.__droneRotation != desiredOrientation:
+            self.rotateCounterClockwise()
+
 
 
 # To add: flying specific modifications

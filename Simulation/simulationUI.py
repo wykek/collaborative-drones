@@ -1,6 +1,29 @@
 import pygame
 import sys
 import numpy as np
+import droneSimulation as sim
+
+class MapUI():
+    def __init__(self, inMap = None):
+        # Initialize 100X100 empty map if not passed.
+        if inMap is None:
+            self.storeMap = np.zeros((100, 100), dtype=np.int16)
+        else:
+            self.storeMap = np.copy(inMap.astype('int16'))
+    def drawMap(self):
+        pass
+    def cycleMap(self, inMap = None):
+        # Initialize 100X100 empty map if not passed.
+        if inMap is None:
+            self.storeMap = np.zeros((100, 100), dtype=np.int16)
+        else:
+            self.storeMap = np.copy(inMap.astype('int16'))
+        self.drawMap()
+    def setScale(self, inX, inY):
+        self.scaleX = inX
+        self.scaleY = inY
+    def setMap(self, inMap):
+        self.storeMap = np.copy(inMap.astype('int16'))
 
 class Button():
     def __init__(self, inCaption = ""):
@@ -125,8 +148,14 @@ class TextBox():
         (int(self.topLeftX * self.scaleX), int(self.topLeftY * self.scaleY)))
 
 class SimulationUI:
-    def __init__(self):
-        pass
+    def __init__(self, inSim = None):
+        if inSim != None:
+            self.simulation = inSim
+        else:
+            self.simulation = sim.Simulation()
+            self.simulation.addBlankMap(100, 100)
+            self.simulation.addFlyingCamera()
+            self.simulation.addFlyingPosition(0, 0, 0, 1)
 
     def runUI(self):
         # Initialize screen variables
@@ -353,10 +382,23 @@ class SimulationUI:
             pygame.display.update()
             pygame.display.flip()
 
-
         # Exit pygame after quitting.
         pygame.quit()
 
 if __name__ == '__main__':
-    simulation = SimulationUI()
-    simulation.runUI()
+    testarray = np.array([], np.int16)
+    testarray2 = np.array([[4, 5, 7, 9], [5, 6, 2, 5], [1, 7, 2, 9], [1, 5, 9, 8]], np.int16)
+    testarray3 = np.array([[5, 4], [3, 2]], np.int16)
+
+    print(testarray)
+    print(testarray2)
+
+    # testarray2.append(testarray)
+
+    print(testarray2)
+
+    print(sys.getsizeof(testarray3[0]))
+    simulationTest = sim.Simulation(testarray2)
+
+    simulationInstance = SimulationUI(simulationTest)
+    simulationInstance.runUI()
