@@ -46,7 +46,7 @@ class Movement:
 # parent class as well as the motor class
 class CarMovement(Motor, Movement):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
 
         # Tweak after testing
         # Modify power and time delivery to proper

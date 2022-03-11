@@ -86,9 +86,9 @@ class DroneCamera:
 
             # Increase X when facing north, or decrease for south
             if (self.__droneRotation > 7 or self.__droneRotation < 3):
-                self._droneY += 1
+                self.__droneY += 1
             elif (self.__droneRotation > 3 and self.__droneRotation < 7):
-                self.droneY -= 1
+                self.__droneY -= 1
         else:
             print("Error: movement without position. \n")
 
@@ -102,9 +102,9 @@ class DroneCamera:
 
             # Decrease X when facing north, or increase for south
             if (self.__droneRotation > 7 or self.__droneRotation < 3):
-                self._droneY -= 1
+                self.__droneY -= 1
             elif (self.__droneRotation > 3 and self.__droneRotation < 7):
-                self.droneY += 1
+                self.__droneY += 1
         else:
             print("Error: movement without position. \n")
 

@@ -2,6 +2,7 @@ import pygame
 import sys
 import numpy as np
 import droneSimulation as sim
+import droneControl as con
 
 class MapUI():
     def __init__(self, inMap = None):
@@ -398,7 +399,12 @@ if __name__ == '__main__':
     print(testarray2)
 
     print(sys.getsizeof(testarray3[0]))
-    simulationTest = sim.Simulation(testarray2)
+
+    # Drone control test
+    simulationTest = con.Controller(testarray2)
+    simulationTest.addCarCamera()
+    simulationTest.addCarPosition(1,1,1,4)
+    simulationTest.moveCarForward(1)
 
     simulationInstance = SimulationUI(simulationTest)
     simulationInstance.runUI()
