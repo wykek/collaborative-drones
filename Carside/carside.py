@@ -30,6 +30,9 @@ if __name__ == '__main__':
     # a specific movement code
     commandDict = {1: forward, 2: backward, 3: clockwise, 4: cClockwise}
 
+    print(str(carNumber))
+    commandDict[1](thisCar)
+
     # Configure message format and source
     headLength = 5
     portNumber = 1093
@@ -43,7 +46,7 @@ if __name__ == '__main__':
     except:
         portNumber = 1093 # No config file found, use default ports
     inSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    inSocket.connect((socket.gethostname(), portNumber))
+    inSocket.connect(('10.20.27.193', portNumber))
 
 
     while True:
@@ -61,7 +64,8 @@ if __name__ == '__main__':
             # movement functions on transmission end
             if len(inCommandFull)-headLength == realLength:
                 try:
-                    commandDict[inCommandFull[headLength:]]
+                    commandDict[inCommandFull[headLength:]](thisCar)
+                    print(str(inCommandFull[headLength:]))
                 except:
                     pass
                 newCommand = True

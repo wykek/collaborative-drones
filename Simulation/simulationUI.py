@@ -1,30 +1,75 @@
 import pygame
 import sys
+import math
 import numpy as np
 import droneSimulation as sim
 import droneControl as con
 
 class MapUI():
     def __init__(self, inMap = None):
+        # Set up fonts
+        self.mapFont = pygame.font.SysFont('Corbel', 25)
+        self.maxSize = 100
+
         # Initialize 100X100 empty map if not passed.
         if inMap is None:
-            self.storeMap = np.zeros((100, 100), dtype=np.int16)
+            self.__storeMap = np.zeros((100, 100), dtype=np.int16)
         else:
-            self.storeMap = np.copy(inMap.astype('int16'))
-    def drawMap(self):
-        pass
-    def cycleMap(self, inMap = None):
+            self.__storeMap = np.copy(inMap.astype('int16'))
+    def drawCell(self, cellX, cellY, cellValue, outScreen):
+        caption = str(cellValue)
+        if cellValue == 0:
+            self.textColor = (0, 0.0, 0)
+        else:
+            self.textColor = (100, 0.0, 100 - 1 * (cellValue % 100))
+        renderText = self.mapFont.render(caption, True, self.textColor)
+
+        self.cellColor = (100, 100, 100)
+        # Calculate box coordinates
+        topLeftX = self.__scaleX * (0.54 * cellX / self.maxSize)
+        topLeftY = self.__scaleY * (1.0 * cellY / self.maxSize)
+        localWidth = 0.54 * self.__scaleX / self.maxSize
+        localHeight = 1.0 * self.__scaleY / self.maxSize
+        centerX = topLeftX + (localWidth / 3)
+        centerY = topLeftY + 0 * (localHeight / 2)
+
+        # Calculate and draw the rectangle
+        localRect = pygame.Rect(int(topLeftX), int(topLeftY),
+                                int(localWidth), int(localHeight))
+        pygame.draw.rect(outScreen, self.cellColor, localRect)
+
+        # Draw the rectangle
+        outScreen.blit(renderText, (int(centerX), int(centerY)))
+
+    def drawMap(self, outScreen):
+        mapWidth, mapHeight = np.shape(self.__storeMap)
+        tempMax = max(mapWidth, mapHeight)
+        if self.maxSize != tempMax:
+            self.maxSize = tempMax
+            self.setScale(self.__scaleX, self.__scaleY)
+        for outIndex in reversed(range(0, mapWidth)):
+            for inIndex in reversed(range(0, mapHeight)):
+                self.drawCell(outIndex, inIndex, \
+                         self.__storeMap[outIndex, inIndex], outScreen)
+    def cycleMap(self, outScreen, inMap = None):
         # Initialize 100X100 empty map if not passed.
         if inMap is None:
-            self.storeMap = np.zeros((100, 100), dtype=np.int16)
+            self.__storeMap = np.zeros((100, 100), dtype=np.int16)
         else:
-            self.storeMap = np.copy(inMap.astype('int16'))
-        self.drawMap()
+            self.__storeMap = np.copy(inMap.astype('int16'))
+
+        # Do the drawing now that its safe
+        self.drawMap(outScreen)
     def setScale(self, inX, inY):
-        self.scaleX = inX
-        self.scaleY = inY
+        self.__scaleX = inX
+        self.__scaleY = inY
+        # Scale font, at least 1 point
+        minScale = max(min(inX * math.log(100 / self.maxSize, 2), \
+                           inY * math.log(self.maxSize, 2)), 400)
+        self.mapFont = pygame.font.SysFont('Corbel', int(minScale / 50))
     def setMap(self, inMap):
-        self.storeMap = np.copy(inMap.astype('int16'))
+        self.__storeMap = np.copy(inMap.astype('int16'))
+
 
 class Button():
     def __init__(self, inCaption = ""):
@@ -222,6 +267,9 @@ class SimulationUI:
         nextCamButton.setPosition(0.98, 0.1, 0.01, 0.04)
         nextCamButton.setScale(defaultX, defaultY)
         resizeList.append(nextCamButton.setScale)
+        # MapUI
+        self.mapUI = MapUI(self.simulation.getMap())
+        resizeList.append(self.mapUI.setScale)
 
         #Cars
         carPrompts = []
@@ -309,6 +357,8 @@ class SimulationUI:
         cameraButton.setPosition(0.867, 0.6, 0.063, 0.04)
         cameraButton.setScale(defaultX, defaultY)
         resizeList.append(cameraButton.setScale)
+        # mapUI Object
+        self.mapUI.setScale(defaultX, defaultY)
 
         # Window cycle
         while exitFlag is False:
@@ -380,6 +430,9 @@ class SimulationUI:
                 pass
             if cameraButton.cycleButton(mouseCoords, isClicked, simScreen):
                 pass
+            # Update visual MapUI object
+            self.mapUI.cycleMap(simScreen, self.simulation.getMap())
+
             pygame.display.update()
             pygame.display.flip()
 
@@ -391,6 +444,15 @@ if __name__ == '__main__':
     testarray2 = np.array([[4, 5, 7, 9], [5, 6, 2, 5], [1, 7, 2, 9], [1, 5, 9, 8]], np.int16)
     testarray3 = np.array([[5, 4], [3, 2]], np.int16)
 
+    testarray4 = np.array([\
+        [4, 5, 7, 9, 16, 12, 83, 13], \
+        [5, 6, 2, 5, 12, 10, 2, 8], \
+        [1, 0, 2, 9, 2, 4, 8, 1], \
+        [1, 5, 9, 8, 7, 7, 3, 20]], \
+        np.int16)
+
+    testarray5 = np.zeros((100, 100), dtype=np.int16)
+
     print(testarray)
     print(testarray2)
 
@@ -400,11 +462,14 @@ if __name__ == '__main__':
 
     print(sys.getsizeof(testarray3[0]))
 
+    print("Here")
     # Drone control test
-    simulationTest = con.Controller(testarray2)
+    #simulationTest = con.Controller(testarray2)
+    simulationTest = sim.Simulation(testarray4)
     simulationTest.addCarCamera()
-    simulationTest.addCarPosition(1,1,1,4)
+    simulationTest.addCarPosition(1, 1, 1, 4)
     simulationTest.moveCarForward(1)
+    print("Here")
 
     simulationInstance = SimulationUI(simulationTest)
     simulationInstance.runUI()

@@ -10,6 +10,9 @@ class Simulation:
         self.__flyingCameras = []
         self.__cars = []
 
+    def getMap(self):
+        return self.__detailedMap.getMap()
+
     def addAggregateMap(self, inMap):
         self.__detailedMap.copyMap(inMap)
 

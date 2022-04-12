@@ -12,6 +12,10 @@ class Controller:
 
         self.__commandLength = 5
         self.__carSockets = []
+        self.__acceptedSockets = []
+
+    def getMap(self):
+        self.__detailedMap.getMap()
 
     def addAggregateMap(self, inMap):
         self.__detailedMap.copyMap(inMap)
@@ -42,8 +46,14 @@ class Controller:
 
         # Set up a socket to actually control the car
         self.__carSockets.append(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
-        self.__carSockets[thisCar].bind((socket.gethostname(), portNumber))
+        self.__carSockets[thisCar].setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #self.__carSockets[thisCar].bind(('10.20.27.193', portNumber))
+        self.__carSockets[thisCar].bind(('127.0.0.1', 1234))
+        self.__acceptedSockets.append(" ") # Placeholder replaced in loop
         self.__carSockets[thisCar].listen(5)
+        while True:
+            self.__acceptedSockets[thisCar], address = self.__carSockets[thisCar].accept()
+            print("Here too")
 
         # TODO add car check
 
@@ -73,17 +83,25 @@ class Controller:
 
     def moveCarForward(self, carNumber):
         self.__cars[carNumber - 1].moveForward()
+        print("Bye ")
 
         # Send the signal to the car to go
         while True:
             # Mutual connection established
-            targetSocket, address = self.__carSockets[carNumber - 1].accept()
+            try:
+                targetSocket, address = self.__carSockets[carNumber - 1].accept()
+                print("I hate sockets")
 
-            # 1 will mean go forward
-            outCommand = "1"
-            outCommand = f"{len(outCommand):<{self.__commandLength}}" + outCommand
 
-            targetSocket.send(bytes(outCommand, "utf-8"))
+                # 1 will mean go forward
+                outCommand = "1"
+                outCommand = f"{len(outCommand):<{self.__commandLength}}" + outCommand
+
+                print(str(self.__commandLength))
+                targetSocket.send(bytes(outCommand, "utf-8"))
+                print(str(outCommand))
+            except:
+                pass
 
     def moveFlyingBack(self, flyingNumber):
         self.__flyingCameras[flyingNumber].moveBack()
